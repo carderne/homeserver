@@ -1,128 +1,138 @@
 version: "3.7"
 
+volumes:
+  lifx-volume:
+
 services:
-  reverse-proxy:
-    container_name: reverse-proxy
-    image: traefik:v2.8
+  books:
+    container_name: books
+    image: carderne/calibre-flask
     restart: unless-stopped
+    volumes:
+      - ${PWD}/books/data:/app/app/data
     ports:
-      - ${NGINX_PORT-80}:80
-      - ${NGINX_PORT_SSL-443}:443
-    command: --providers.docker
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${PWD}/traefik:/root/.config
-      - ${PWD}/traefik/shared:/shared
-    networks:
-      - tipi_main_network
+      - ${BOOKS_PORT}:8000
 
-  tipi-db:
-    container_name: tipi-db
-    image: postgres:14
+  lifx:
+    container_name: lifx
+    image: carderne/lifx
     restart: unless-stopped
-    stop_grace_period: 1m
     volumes:
-      - ${PWD}/data/postgres:/var/lib/postgresql/data
+      - ${PWD}/lifx/conf:${LIFX_CONF}
+      - lifx-volume:/var/spool/cron/crontabs/
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_USER: tipi
-      POSTGRES_DB: tipi
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d tipi -U tipi"]
-      interval: 5s
-      timeout: 10s
-      retries: 120
-    networks:
-      - tipi_main_network
-
-  tipi-redis:
-    container_name: tipi-redis
-    image: redis:alpine
-    restart: unless-stopped
-    volumes:
-      - ./data/redis:/data
-    networks:
-      - tipi_main_network
-
-  api:
-    image: meienberger/runtipi:${TIPI_VERSION}
-    command: /bin/sh -c "cd /api && npm run start"
-    restart: unless-stopped
-    container_name: api
+      - LIFX_CONF=${LIFX_CONF}
+    ports:
+      - ${LIFX_PORT}:8000
     depends_on:
-      tipi-db:
-        condition: service_healthy
-    volumes:
-      - ${PWD}/repos:/runtipi/repos:ro
-      - ${PWD}/apps:/runtipi/apps
-      - ${PWD}/state:/runtipi/state
-      - ${PWD}/logs:/app/logs
-      - ${STORAGE_PATH}:/app/storage
-      - ${PWD}/.env:/runtipi/.env:ro
-    environment:
-      INTERNAL_IP: ${INTERNAL_IP}
-      TIPI_VERSION: ${TIPI_VERSION}
-      JWT_SECRET: ${JWT_SECRET}
-      NGINX_PORT: ${NGINX_PORT}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_USERNAME: tipi
-      POSTGRES_DBNAME: tipi
-      POSTGRES_HOST: tipi-db
-      NODE_ENV: production
-      APPS_REPO_ID: ${APPS_REPO_ID}
-      APPS_REPO_URL: ${APPS_REPO_URL}
-      DOMAIN: ${DOMAIN}
-      ARCHITECTURE: ${ARCHITECTURE}
-    networks:
-      - tipi_main_network
-    labels:
-      traefik.enable: true
-      # Web
-      traefik.http.routers.api.rule: PathPrefix(`/api`)
-      traefik.http.routers.api.service: api
-      traefik.http.routers.api.entrypoints: web
-      traefik.http.routers.api.middlewares: api-stripprefix
-      traefik.http.services.api.loadbalancer.server.port: 3001
-      # Websecure
-      traefik.http.routers.api-secure.rule: (Host(`${DOMAIN}`) && PathPrefix(`/api`))
-      traefik.http.routers.api-secure.entrypoints: websecure
-      traefik.http.routers.api-secure.service: api-secure
-      traefik.http.routers.api-secure.tls.certresolver: myresolver
-      traefik.http.routers.api-secure.middlewares: api-stripprefix
-      traefik.http.services.api-secure.loadbalancer.server.port: 3001
-      # Middlewares
-      traefik.http.middlewares.api-stripprefix.stripprefix.prefixes: /api
+      - lifx-daemon
+      - lifx-cron
 
-  dashboard:
-    image: meienberger/runtipi:${TIPI_VERSION}
-    command: /bin/sh -c "cd /dashboard && node server.js"
+  lifx-daemon:
+    container_name: lifx-daemon
+    image: carderne/lifx
     restart: unless-stopped
-    container_name: dashboard
-    networks:
-      - tipi_main_network
-    depends_on:
-      api:
-        condition: service_started
+    command: lifx-daemon
+    volumes:
+      - ${PWD}/lifx/conf:${LIFX_CONF}
     environment:
-      NODE_ENV: production
-    labels:
-      traefik.enable: true
-      # Web
-      traefik.http.routers.dashboard.rule: PathPrefix("/")
-      traefik.http.routers.dashboard.service: dashboard
-      traefik.http.routers.dashboard.entrypoints: web
-      traefik.http.services.dashboard.loadbalancer.server.port: 3000
-      # Websecure
-      traefik.http.routers.dashboard-secure.rule: Host(`${DOMAIN}`) && PathPrefix(`/`)
-      traefik.http.routers.dashboard-secure.service: dashboard-secure
-      traefik.http.routers.dashboard-secure.entrypoints: websecure
-      traefik.http.routers.dashboard-secure.tls.certresolver: myresolver
-      traefik.http.services.dashboard-secure.loadbalancer.server.port: 3000
+      - LIFX_CONF=${LIFX_CONF}
 
-networks:
-  tipi_main_network:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 10.21.21.0/24
+  lifx-cron:
+    container_name: lifx-cron
+    image: carderne/lifx
+    restart: unless-stopped
+    command: bash -c 'env >> /etc/environment && exec cron -f -L 2'
+    init: true
+    volumes:
+      - ${PWD}/lifx/conf:${LIFX_CONF}
+      - lifx-volume:/var/spool/cron/crontabs/
+    environment:
+      - LIFX_CONF=${LIFX_CONF}
+      - LIFX_BIN=/usr/local/bin/lifx-cli
+
+  transmission:
+    container_name: transmission
+    image: lscr.io/linuxserver/transmission:latest
+    restart: unless-stopped
+    volumes:
+      - ${PWD}/transmission/conf:/config
+      - ${PWD}/transmission/data:/downloads
+    ports:
+      - ${TRANSMISSION_PORT}:9091
+      #- 51413:51413
+      #- 51413:51413/udp
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+      - USER=${TRANSMISSION_USERNAME:-admin}
+      - PASS=${TRANSMISSION_PASSWORD:-admin}
+      - TRANSMISSION_WEB_HOME=/transmission-web-control/
+    dns:
+      - ${DNS}
+
+  adguard:
+    container_name: adguard
+    image: adguard/adguardhome:v0.107.18
+    restart: unless-stopped
+    volumes:
+      - ${PWD}/adguard/data:/opt/adguardhome/work
+      - ${PWD}/adguard/conf:/opt/adguardhome/conf
+    ports:
+      - 0.0.0.0:53:53/tcp
+      - 0.0.0.0:53:53/udp
+      - ${ADGUARD_PORT}:80
+
+  nextcloud:
+    container_name: nextcloud
+    image: nextcloud:25.0.0-apache
+    restart: unless-stopped
+    volumes:
+      - ${PWD}/nextcloud/data/nextcloud:/var/www/html
+    ports:
+      - ${NEXTCLOUD_PORT}:80
+    environment:
+      - POSTGRES_HOST=db-nextcloud
+      - REDIS_HOST=redis-nextcloud
+      - POSTGRES_PASSWORD=tipi
+      - POSTGRES_USER=tipi
+      - POSTGRES_DB=nextcloud
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_USERNAME:-admin}
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_PASSWORD:-admin}
+      - NEXTCLOUD_TRUSTED_DOMAINS=${APP_DOMAIN}
+      - TRUSTED_PROXIES=172.16.0.0/12
+      - OVERWRITEHOST=${APP_DOMAIN}
+      - OVERWRITEPROTOCOL=${APP_PROTOCOL:-http}
+    depends_on:
+      - db-nextcloud
+      - redis-nextcloud
+
+  db-nextcloud:
+    container_name: db-nextcloud
+    image: postgres:14.2
+    restart: on-failure
+    volumes:
+      - ${PWD}/nextcloud/data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=tipi
+      - POSTGRES_USER=tipi
+      - POSTGRES_DB=nextcloud
+
+  redis-nextcloud:
+    container_name: redis-nextcloud
+    image: redis:6.2.6
+    restart: on-failure
+    user: 1000:1000
+    volumes:
+      - ${PWD}/nextcloud/data/redis:/data
+
+  cron:
+    image: nextcloud:25.0.0-apache
+    restart: on-failure
+    volumes:
+      - ${PWD}/nextcloud/data/nextcloud:/var/www/html
+    entrypoint: /cron.sh
+    depends_on:
+      - db-nextcloud
+      - redis-nextcloud
