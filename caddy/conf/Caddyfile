@@ -1,0 +1,9 @@
+:9000 {
+#   handle_path /root/to/svc* {
+#       reverse_proxy service:port
+#   }
+    handle_path /home* {
+        root * /
+        file_server
+    }
+}

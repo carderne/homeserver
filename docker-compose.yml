@@ -4,6 +4,15 @@ volumes:
   lifx-volume:
 
 services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "8898:9000"
+    volumes:
+      - ${PWD}/caddy/conf/Caddyfile:/etc/caddy/Caddyfile
+      - ${PWD}/caddy/conf/index.html:/index.html
+
   books:
     container_name: books
     image: carderne/calibre-flask
@@ -106,7 +115,7 @@ services:
     volumes:
       - ${PWD}/nextcloud/data/nextcloud:/var/www/html
     ports:
-      - 9003:80
+      - ${NEXTCLOUD_PORT:-9003}:80
     environment:
       - POSTGRES_HOST=db-nextcloud
       - REDIS_HOST=redis-nextcloud
@@ -118,7 +127,7 @@ services:
       - NEXTCLOUD_HOSTNAME=${APP_DOMAIN:-box.local}
       - NEXTCLOUD_TRUSTED_DOMAINS=${APP_DOMAIN:-box.local}
       - TRUSTED_PROXIES=172.16.0.0/12
-      - OVERWRITEHOST=${APP_DOMAIN:-box.local}:${NEXTCLOUD_PORT}
+      - OVERWRITEHOST=${APP_DOMAIN:-box.local}:${NEXTCLOUD_PORT:-9003}
       - OVERWRITEPROTOCOL=${APP_PROTOCOL:-http}
     depends_on:
       - db-nextcloud
