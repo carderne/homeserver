@@ -4,11 +4,13 @@ volumes:
   lifx-volume:
 
 services:
+  # Caddy runs on port 80 and serves books at :80/books
   caddy:
+    container_name: caddy
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
-      - "8898:9000"
+      - 80:80
     volumes:
       - ${PWD}/caddy/conf/Caddyfile:/etc/caddy/Caddyfile
       - ${PWD}/caddy/conf/index.html:/index.html
@@ -20,7 +22,7 @@ services:
     restart: unless-stopped
     command: fava --host=0.0.0.0 --port=5000 /app/accounts/main.bean
     ports:
-      - ${FAVA_PORT:-9004}:5000
+      - ${FAVA_PORT:-5000}:5000
     volumes:
       - ${PWD}/fava/data/accounts:/app/accounts
 
@@ -31,7 +33,7 @@ services:
     volumes:
       - ${PWD}/books/data:/app/app/data
     ports:
-      - 80:8000
+      - ${BOOKS_PORT:-5001}:8000
 
   calibre-web:
     image: lscr.io/linuxserver/calibre-web:0.6.19
@@ -45,7 +47,7 @@ services:
       - ${PWD}/calibre-web/conf:/config
       - ${PWD}/books/data:/books
     ports:
-      - 8999:8083
+      - ${CALIBRE_PORT:-5002}:8083
     restart: unless-stopped
 
   lifx:
@@ -58,7 +60,7 @@ services:
     environment:
       - LIFX_CONF=/app/conf
     ports:
-      - 9000:8000
+      - ${LIFX_PORT:-5003}:8000
     depends_on:
       - lifx-daemon
       - lifx-cron
@@ -94,7 +96,7 @@ services:
       - ${PWD}/transmission/conf:/config
       - ${PWD}/transmission/data:/downloads
     ports:
-      - 9001:9091
+      - ${TRANSMISSION_PORT:-5004}:9091
       #- 51413:51413
       #- 51413:51413/udp
     environment:
@@ -117,7 +119,7 @@ services:
     ports:
       - 0.0.0.0:53:53/tcp
       - 0.0.0.0:53:53/udp
-      - 9002:80
+      - ${ADGUARD_PORT:-5005}:80
 
   nextcloud:
     container_name: nextcloud
@@ -126,7 +128,7 @@ services:
     volumes:
       - ${PWD}/nextcloud/data/nextcloud:/var/www/html
     ports:
-      - ${NEXTCLOUD_PORT:-9003}:80
+      - ${NEXTCLOUD_PORT:-5006}:80
     environment:
       - POSTGRES_HOST=db-nextcloud
       - REDIS_HOST=redis-nextcloud
