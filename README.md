@@ -39,6 +39,12 @@ Symlink the folder containing the books:
 ln -s /path/to/your/calibre/dir books/data
 ```
 
+### fava
+```bash
+mkdir -p fava/data
+ln -s /path/to/beancount/dir fava/data/accounts
+```
+
 ### Nextcloud
 The three environment variables tied to `APP_DOMAIN` may need to be set to something that works on your network/domain.
 

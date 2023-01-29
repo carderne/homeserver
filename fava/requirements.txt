@@ -1,0 +1,5 @@
+beancount
+beanprice @ git+https://github.com/beancount/beanprice.git
+fava
+fava-classy-portfolio @ git+https://github.com/carderne/fava-classy-portfolio
+starling-beancount>=1.0.0

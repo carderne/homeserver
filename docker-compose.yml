@@ -13,6 +13,17 @@ services:
       - ${PWD}/caddy/conf/Caddyfile:/etc/caddy/Caddyfile
       - ${PWD}/caddy/conf/index.html:/index.html
 
+  fava:
+    container_name: fava
+    build:
+      context: fava
+    restart: unless-stopped
+    command: fava --host=0.0.0.0 --port=5000 /app/accounts/main.bean
+    ports:
+      - ${FAVA_PORT:-9004}:5000
+    volumes:
+      - ${PWD}/fava/data/accounts:/app/accounts
+
   books:
     container_name: books
     image: carderne/calibre-flask
