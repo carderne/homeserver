@@ -1,6 +1,8 @@
-adguard/data/
-books/data/
-lifx/data/
-nextcloud/data/
-transmission/data/
-transmission/conf/
+.env
+adguard/data
+books/data
+calibre-web/conf
+lifx/data
+nextcloud/data
+transmission/data
+transmission/conf

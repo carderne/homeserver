@@ -4,7 +4,8 @@
 My simple homeserver setup, running the following using Docker Compose:
 - [AdGuard Home](https://adguard.com/en/adguard-home/overview.html)
 - [Nextcloud](https://nextcloud.com/)
-- [calibre-flask](https://github.com/carderne/calibre-flask) (I don't use the popular [calibre-web](https://github.com/janeczku/calibre-web) because it doesn't have a simple HTML interface for  Kindles)
+- [calibre-flask](https://github.com/carderne/calibre-flask)
+- [calibre-web](https://github.com/janeczku/calibre-web) (much better, but doesn't have a simple HTML interface for  Kindles)
 - [lifx-night-light](https://github.com/carderne/lifx-night-light)
 
 Mostly copied from [runtipi](https://github.com/meienberger/runtipi) and [runtipi-appstore](https://github.com/meienberger/runtipi-appstore), without the traefix reverse proxy, or the management API.
@@ -20,11 +21,26 @@ Steps 1 and 2 from [here](https://www.digitalocean.com/community/tutorials/how-t
 apt install docker-compose-plugin
 ```
 
-## Modifications
-In [.env](.env), set the `APP_DOMAIN`, and `_USERNAME` and `_PASSWORD` variables to more useful values, if necessary. The latter will default to `admin/admin` if not set.
+## Secrets
+```bash
+cp .env.example .env
+```
+
+And then modify the `USERNAME`/`PASSWORD` variables in that file.
+They will default to admin/admin if not set.
 
 ## ARM versions of images
 You may need to locally build the images for [calibre-flask](https://github.com/carderne/calibre-flask) and [lifx-night-light](https://github.com/carderne/lifx-night-light), if the DockerHub versions don't support your CPU arch.
+
+## App-specific setup
+### books
+Symlink the folder containing the books:
+```bash
+ln -s /path/to/your/calibre/dir books/data
+```
+
+### Nextcloud
+The three environment variables tied to `APP_DOMAIN` may need to be set to something that works on your network/domain.
 
 ## Run
 ```bash
