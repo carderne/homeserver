@@ -3,17 +3,70 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <head><title>Box Home</title></head>
+<style>
+body{
+  margin:1em auto;
+  max-width:40em;
+  padding:0 1em;
+  font:1.2em sans-serif
+}
+.main {
+  width: 300px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(100px, 1fr));
+  gap: 20px 20px;
+}
+.sep {
+  height: 20px;
+}
+p {
+  margin: 0;
+}
+a {
+  display: block;
+  text-align: center;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  text-decoration: none;
+  color: #333;
+}
+
+a:hover {
+  background-color: #f0f0f0;
+}
+</style>
 <body>
-<p><a href="http://192.168.178.1">router</a></p>
-<br>
-<p><a href="http://box.local:9004">fava</a></p>
-<p><a href="http://box.local:80">books</a></p>
-<p><a href="http://box.local:8999">calibre-web</a></p>
-<p><a href="http://box.local:9000">lifx</a></p>
-<p><a href="http://box.local:9001">transmission</a></p>
-<p><a href="http://box.local:9002">adguard</a></p>
-<p><a href="http://box.local:9003">nextcloud</a></p>
-<br>
-<p><a href="https://rdrn.me/energy">energy</a></p>
+<div class="main">
+  <p><a class="li" data-href="5000">fava</a></p>
+  <p><a class="li" data-href="8123">home</a></p>
+  <p class="sep"></p>
+  <p class="sep"></p>
+  <p><a class="li" data-href="80/books">books</a></p>
+  <p><a class="li" data-href="5002">calibre-web</a></p>
+  <p class="sep"></p>
+  <p class="sep"></p>
+  <p><a class="li" data-href="5004">transmission</a></p>
+  <p><a class="li" data-href="5009">jellyfin</a></p>
+  <p class="sep"></p>
+  <p class="sep"></p>
+  <p><a href="http://192.168.178.1">router</a></p>
+  <p><a href="http://192.168.178.1">repeater</a></p>
+  <p><a href="http://192.168.178.19" data-href="5005">adguard</a></p>
+  <p><a class="li" data-href="631">cups</a></p>
+  <p class="sep"></p>
+  <p class="sep"></p>
+  <p><a href="https://rdrn.me/energy">energy</a></p>
+  <p><a href="https://food.rdrn.me">food</a></p>
+<div>
+<script type="text/javascript">
+Array.from(document.getElementsByClassName("li")).forEach((el) => {
+  const [port, path] = el.dataset.href.split("/");
+  const url = new URL(path ?? "", window.location);
+  url.port = port;
+  el.href = url.toString();
+});
+</script>
 </body>
 </html>

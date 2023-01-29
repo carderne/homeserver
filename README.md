@@ -3,15 +3,13 @@
 
 My simple homeserver setup, running the following using Docker Compose:
 - [AdGuard Home](https://adguard.com/en/adguard-home/overview.html)
-- [Nextcloud](https://nextcloud.com/)
 - [calibre-flask](https://github.com/carderne/calibre-flask)
 - [calibre-web](https://github.com/janeczku/calibre-web) (much better, but doesn't have a simple HTML interface for  Kindles)
-- [lifx-night-light](https://github.com/carderne/lifx-night-light)
 
 Mostly copied from [runtipi](https://github.com/meienberger/runtipi) and [runtipi-appstore](https://github.com/meienberger/runtipi-appstore), without the traefix reverse proxy, or the management API.
 
 ## File structure
-Each service has a directory (`books`, `lifx` etc), with (up to) two folders in each:
+Each service has a directory (`books` etc), with (up to) two folders in each:
 - `conf`: optionally version-controlled
 - `data`: user or app data
 
@@ -29,9 +27,6 @@ cp .env.example .env
 And then modify the `USERNAME`/`PASSWORD` variables in that file.
 They will default to admin/admin if not set.
 
-## ARM versions of images
-You may need to locally build the images for [calibre-flask](https://github.com/carderne/calibre-flask) and [lifx-night-light](https://github.com/carderne/lifx-night-light), if the DockerHub versions don't support your CPU arch.
-
 ## App-specific setup
 ### books
 Symlink the folder containing the books:
@@ -45,13 +40,10 @@ mkdir -p fava/data
 ln -s /path/to/beancount/dir fava/data/accounts
 ```
 
-### Nextcloud
-The three environment variables tied to `APP_DOMAIN` may need to be set to something that works on your network/domain.
+### Adguard network setup
+https://www.smarthomebeginner.com/adguard-home-docker-compose-guide/
 
 ## Run
 ```bash
 docker compose up --detach
 ```
-
-## Port 53 issue with AdGuard
-[Solution here](https://github.com/AdguardTeam/AdGuardHome/wiki/Docker#resolved-daemon)

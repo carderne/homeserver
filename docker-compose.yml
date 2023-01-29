@@ -1,174 +1,124 @@
-version: "3.7"
+version: "3.9"
 
-volumes:
-  lifx-volume:
+networks:
+  dockervlan:
+    name: dockervlan
+    driver: macvlan
+    driver_opts:
+      parent: eno1
+    ipam:
+      config:
+        - subnet: "192.168.178.0/24"
+          ip_range: "192.168.178.19/32"
+          gateway: "192.168.178.1"
 
 services:
   caddy:
-    image: caddy:2-alpine
+    container_name: caddy
+    image: caddy:2.5.2-alpine
     restart: unless-stopped
     ports:
-      - "8898:9000"
+      - 80:80
     volumes:
       - ${PWD}/caddy/conf/Caddyfile:/etc/caddy/Caddyfile
-      - ${PWD}/caddy/conf/index.html:/index.html
+      - ${PWD}/caddy/conf/index.html:/home/index.html
 
   fava:
     container_name: fava
     build:
+      network: host
       context: fava
+    image: fava
     restart: unless-stopped
     command: fava --host=0.0.0.0 --port=5000 /app/accounts/main.bean
+    environment:
+      - TZ
     ports:
-      - ${FAVA_PORT:-9004}:5000
+      - ${FAVA_PORT:-5000}:5000
     volumes:
       - ${PWD}/fava/data/accounts:/app/accounts
 
   books:
     container_name: books
-    image: carderne/calibre-flask
+    image: carderne/calibre-flask:latest
     restart: unless-stopped
+    environment:
+      - TZ
+      - BOOKS_PREFIX=/books
     volumes:
       - ${PWD}/books/data:/app/app/data
     ports:
-      - 80:8000
+      - ${BOOKS_PORT:-5001}:8000
 
   calibre-web:
-    image: lscr.io/linuxserver/calibre-web:0.6.19
     container_name: calibre-web
+    image: lscr.io/linuxserver/calibre-web:0.6.21
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/London
+      - TZ
       - DOCKER_MODS=linuxserver/mods:universal-calibre
     volumes:
       - ${PWD}/calibre-web/conf:/config
       - ${PWD}/books/data:/books
     ports:
-      - 8999:8083
+      - ${CALIBRE_PORT:-5002}:8083
     restart: unless-stopped
-
-  lifx:
-    container_name: lifx
-    image: carderne/lifx
-    restart: unless-stopped
-    volumes:
-      - ${PWD}/lifx/conf:/app/conf
-      - lifx-volume:/var/spool/cron/crontabs/
-    environment:
-      - LIFX_CONF=/app/conf
-    ports:
-      - 9000:8000
-    depends_on:
-      - lifx-daemon
-      - lifx-cron
-
-  lifx-daemon:
-    container_name: lifx-daemon
-    image: carderne/lifx
-    restart: unless-stopped
-    command: lifx-daemon
-    volumes:
-      - ${PWD}/lifx/conf:/app/conf
-    environment:
-      - LIFX_CONF=/app/conf
-
-  lifx-cron:
-    container_name: lifx-cron
-    image: carderne/lifx
-    restart: unless-stopped
-    command: bash -c 'env >> /etc/environment && exec cron -f -L 2'
-    init: true
-    volumes:
-      - ${PWD}/lifx/conf:/app/conf
-      - lifx-volume:/var/spool/cron/crontabs/
-    environment:
-      - LIFX_CONF=/app/conf
-      - LIFX_BIN=/usr/local/bin/lifx-cli
 
   transmission:
     container_name: transmission
-    image: lscr.io/linuxserver/transmission:latest
+    image: lscr.io/linuxserver/transmission:amd64-4.0.5-r0-ls222
     restart: unless-stopped
     volumes:
       - ${PWD}/transmission/conf:/config
-      - ${PWD}/transmission/data:/downloads
+      - ${PWD}/downloads:/downloads
     ports:
-      - 9001:9091
-      #- 51413:51413
-      #- 51413:51413/udp
+      - ${TRANSMISSION_PORT:-5004}:9091
     environment:
+      - TZ
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/London
       - USER=${TRANSMISSION_USERNAME:-admin}
       - PASS=${TRANSMISSION_PASSWORD:-admin}
-      - TRANSMISSION_WEB_HOME=/transmission-web-control/
     dns:
       - 9.9.9.9
 
   adguard:
     container_name: adguard
-    image: adguard/adguardhome:v0.107.18
+    image: adguard/adguardhome:v0.107.44
     restart: unless-stopped
     volumes:
       - ${PWD}/adguard/data:/opt/adguardhome/work
       - ${PWD}/adguard/conf:/opt/adguardhome/conf
     ports:
-      - 0.0.0.0:53:53/tcp
-      - 0.0.0.0:53:53/udp
-      - 9002:80
+      - 53:53/tcp
+      - 53:53/udp
+      - ${ADGUARD_PORT:-5005}:80
+    networks:
+      dockervlan:
+        ipv4_address: 192.168.178.19
 
-  nextcloud:
-    container_name: nextcloud
-    image: nextcloud:25.0.0-apache
-    restart: unless-stopped
+  jellyfin:
+    container_name: jellyfin
+    image: lscr.io/linuxserver/jellyfin:10.8.13
     volumes:
-      - ${PWD}/nextcloud/data/nextcloud:/var/www/html
+      - ${PWD}/jellyfin/conf:/config
+      - ${PWD}/media/Movies:/media/Movies
+      - ${PWD}/media/Series:/media/Series
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ
+      - JELLYFIN_PublishedServerUrl=http://box.local/
+    restart: "unless-stopped"
     ports:
-      - ${NEXTCLOUD_PORT:-9003}:80
-    environment:
-      - POSTGRES_HOST=db-nextcloud
-      - REDIS_HOST=redis-nextcloud
-      - POSTGRES_PASSWORD=tipi
-      - POSTGRES_USER=tipi
-      - POSTGRES_DB=nextcloud
-      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_USERNAME:-admin}
-      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_PASSWORD:-admin}
-      - NEXTCLOUD_HOSTNAME=${APP_DOMAIN:-box.local}
-      - NEXTCLOUD_TRUSTED_DOMAINS=${APP_DOMAIN:-box.local}
-      - TRUSTED_PROXIES=172.16.0.0/12
-      - OVERWRITEHOST=${APP_DOMAIN:-box.local}:${NEXTCLOUD_PORT:-9003}
-      - OVERWRITEPROTOCOL=${APP_PROTOCOL:-http}
-    depends_on:
-      - db-nextcloud
-      - redis-nextcloud
+      - ${JELLYFIN_PORT:-5009}:8096
 
-  db-nextcloud:
-    container_name: db-nextcloud
-    image: postgres:14.2
-    restart: on-failure
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
     volumes:
-      - ${PWD}/nextcloud/data/db:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_PASSWORD=tipi
-      - POSTGRES_USER=tipi
-      - POSTGRES_DB=nextcloud
-
-  redis-nextcloud:
-    container_name: redis-nextcloud
-    image: redis:6.2.6
-    restart: on-failure
-    user: 1000:1000
-    volumes:
-      - ${PWD}/nextcloud/data/redis:/data
-
-  cron:
-    image: nextcloud:25.0.0-apache
-    restart: on-failure
-    volumes:
-      - ${PWD}/nextcloud/data/nextcloud:/var/www/html
-    entrypoint: /cron.sh
-    depends_on:
-      - db-nextcloud
-      - redis-nextcloud
+      - ${PWD}/homeassistant/conf:/config
+    restart: unless-stopped
+    privileged: true
+    network_mode: host

@@ -1,9 +1,9 @@
-:9000 {
-#   handle_path /root/to/svc* {
-#       reverse_proxy service:port
-#   }
-    handle_path /home* {
-        root * /
-        file_server
-    }
+:80, box.local:80 {
+  handle /books* {
+    reverse_proxy books:8000
+  }
+  handle_path / {
+    root * /home
+    file_server
+  }
 }
