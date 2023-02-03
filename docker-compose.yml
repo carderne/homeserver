@@ -27,8 +27,10 @@ services:
 
   books:
     container_name: books
-    image: carderne/calibre-flask
+    image: carderne/calibre-flask:latest
     restart: unless-stopped
+    environment:
+      BOOKS_PREFIX: /books
     volumes:
       - ${PWD}/books/data:/app/app/data
     ports:
