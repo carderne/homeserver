@@ -38,21 +38,9 @@ services:
     volumes:
       - ${PWD}/fava/data/accounts:/app/accounts
 
-  books:
-    container_name: books
-    image: carderne/calibre-flask:latest
-    restart: unless-stopped
-    environment:
-      - TZ
-      - BOOKS_PREFIX=/books
-    volumes:
-      - ${PWD}/books/data:/app/app/data
-    ports:
-      - ${BOOKS_PORT:-5001}:8000
-
   calibre-web:
     container_name: calibre-web
-    image: lscr.io/linuxserver/calibre-web:0.6.21
+    image: carderne/calibre-web:0.0.1
     environment:
       - PUID=1000
       - PGID=1000
