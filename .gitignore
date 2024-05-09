@@ -13,3 +13,4 @@ transmission/data
 transmission/conf
 jellyfin/conf
 homeassistant/conf
+esphome/conf/**

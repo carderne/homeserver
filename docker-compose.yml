@@ -108,3 +108,12 @@ services:
     restart: unless-stopped
     privileged: true
     network_mode: host
+
+  esphome:
+    container_name: esphome
+    image: esphome/esphome
+    volumes:
+      - ${PWD}/esphome/conf:/config
+    restart: always
+    privileged: true
+    network_mode: host
