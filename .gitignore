@@ -1,3 +1,6 @@
+*.net.crt
+*.net.key
+
 ._.DS_Store
 .env
 downloads/
