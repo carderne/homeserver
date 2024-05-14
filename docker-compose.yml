@@ -35,6 +35,8 @@ services:
       - ${FAVA_PORT:-5000}:5000
     volumes:
       - ~/accounts/:/app/accounts
+    dns:
+      - 9.9.9.9
 
   calibre-web:
     container_name: calibre-web
