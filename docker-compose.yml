@@ -6,9 +6,9 @@ networks:
       parent: eno1
     ipam:
       config:
-        - subnet: "192.168.178.0/24"
-          ip_range: "192.168.178.19/32"
-          gateway: "192.168.178.1"
+        - subnet: "192.168.1.0/24"
+          ip_range: "192.168.1.4/32"
+          gateway: "192.168.1.1"
 
 services:
   caddy:
@@ -84,7 +84,7 @@ services:
       - ${ADGUARD_PORT:-5005}:80
     networks:
       dockervlan:
-        ipv4_address: 192.168.178.19
+        ipv4_address: 192.168.1.4
 
   jellyfin:
     container_name: jellyfin
