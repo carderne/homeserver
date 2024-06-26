@@ -13,7 +13,7 @@ networks:
 services:
   caddy:
     container_name: caddy
-    image: caddy:2.5.2-alpine
+    image: caddy:2.8.4-alpine
     restart: unless-stopped
     ports:
       - 80:80
@@ -55,7 +55,7 @@ services:
 
   transmission:
     container_name: transmission
-    image: lscr.io/linuxserver/transmission:amd64-4.0.5-r0-ls222
+    image: linuxserver/transmission:amd64-4.0.6
     restart: unless-stopped
     volumes:
       - ${PWD}/transmission/conf:/config
@@ -73,7 +73,7 @@ services:
 
   adguard:
     container_name: adguard
-    image: adguard/adguardhome:v0.107.44
+    image: adguard/adguardhome:v0.107.51
     restart: unless-stopped
     volumes:
       - ${PWD}/adguard/data:/opt/adguardhome/work
@@ -88,7 +88,7 @@ services:
 
   jellyfin:
     container_name: jellyfin
-    image: lscr.io/linuxserver/jellyfin:10.8.13
+    image: linuxserver/jellyfin:10.9.7
     volumes:
       - ${PWD}/jellyfin/conf:/config
       - ${PWD}/media/Movies:/media/Movies
@@ -113,7 +113,7 @@ services:
 
   esphome:
     container_name: esphome
-    image: esphome/esphome
+    image: esphome/esphome:2024.6.3
     volumes:
       - ${PWD}/esphome/conf:/config
     restart: always
