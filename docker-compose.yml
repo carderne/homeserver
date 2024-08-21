@@ -40,7 +40,7 @@ services:
 
   calibre-web:
     container_name: calibre-web
-    image: carderne/calibre-web:0.6.21-3
+    image: carderne/calibre-web:0.6.23
     environment:
       - PUID=1000
       - PGID=1000
