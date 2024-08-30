@@ -110,6 +110,8 @@ services:
     restart: unless-stopped
     privileged: true
     network_mode: host
+    devices:
+    - /dev/ttyACM0:/dev/zigbee
 
   esphome:
     container_name: esphome
